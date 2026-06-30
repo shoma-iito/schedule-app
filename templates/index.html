@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Schedule App</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Schedule App</h1>
+    <a class="add-button" href="/add">＋予定追加</a>
+</header>
+
+<main>
+    <div class="month-header">
+        <a class="month-button" href="/?year={{ prev_year }}&month={{ prev_month }}">← 前月</a>
+        <h2>{{ year }}年 {{ month }}月</h2>
+        <a class="month-button" href="/?year={{ next_year }}&month={{ next_month }}">翌月 →</a>
+    </div>
+
+    <table class="calendar">
+        <tr>
+            <th class="sun">日</th>
+            <th>月</th>
+            <th>火</th>
+            <th>水</th>
+            <th>木</th>
+            <th>金</th>
+            <th class="sat">土</th>
+        </tr>
+
+        {% for week in month_days %}
+        <tr>
+            {% for day in week %}
+            <td>
+                {% if day != 0 %}
+                    {% if year == today_year and month == today_month and day == today_day %}
+                        <div class="day today">{{ day }}</div>
+                    {% else %}
+                        <div class="day">{{ day }}</div>
+                    {% endif %}
+
+                    {% for schedule in schedules %}
+                        {% if schedule[2][0:4]|int == year and schedule[2][5:7]|int == month and schedule[2][8:10]|int == day %}
+                            <a class="event" href="/edit/{{ schedule[0] }}">
+                                {{ schedule[1] }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <section class="list-area">
+        <h2>予定一覧</h2>
+
+        <ul>
+            {% for schedule in schedules %}
+                <li>
+                    <span>{{ schedule[1] }}</span>
+                    <small>{{ schedule[2] }}</small>
+                    <a class="edit-link" href="/edit/{{ schedule[0] }}">編集</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+</main>
+
+</body>
+</html>

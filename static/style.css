@@ -1,0 +1,217 @@
+body {
+    margin: 0;
+    background: #f5f7fb;
+    font-family: Arial, "Yu Gothic", sans-serif;
+    color: #333;
+}
+
+header {
+    background: white;
+    padding: 18px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.add-button {
+    background: #2563eb;
+    color: white;
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+main {
+    width: 90%;
+    max-width: 1000px;
+    margin: 30px auto;
+}
+
+.month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.month-header h2 {
+    margin: 0;
+}
+
+.month-button {
+    background: white;
+    color: #2563eb;
+    text-decoration: none;
+    padding: 8px 14px;
+    border: 1px solid #2563eb;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.calendar {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.calendar th {
+    padding: 12px;
+    background: #f1f5f9;
+    border: 1px solid #ddd;
+}
+
+.calendar td {
+    width: 14.2%;
+    height: 100px;
+    vertical-align: top;
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.day {
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.today {
+    display: inline-block;
+    background: #2563eb;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 50%;
+}
+
+.event {
+    display: block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-top: 4px;
+    text-decoration: none;
+}
+
+.event:hover {
+    background: #bfdbfe;
+}
+
+.sun {
+    color: #dc2626;
+}
+
+.sat {
+    color: #2563eb;
+}
+
+.list-area {
+    margin-top: 40px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.list-area h2 {
+    text-align: left;
+}
+
+.list-area ul {
+    padding-left: 20px;
+}
+
+.list-area li {
+    margin-bottom: 10px;
+}
+
+.list-area small {
+    color: #666;
+    margin-left: 10px;
+}
+
+.edit-link {
+    margin-left: 12px;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.form-box {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.form-box label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.form-box input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.checkbox-label {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox-label input {
+    width: auto;
+}
+
+.form-title {
+    margin-top: 30px;
+    font-size: 20px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
+
+.form-box button {
+    margin-top: 24px;
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.delete-form {
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+.delete-button {
+    width: 100%;
+    padding: 12px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.help-text {
+    color: #666;
+    font-size: 13px;
+    margin-top: 6px;
+}

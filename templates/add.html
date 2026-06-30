@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>予定追加</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+    <h1>予定追加</h1>
+    <a class="add-button" href="/">戻る</a>
+</header>
+
+<main>
+    <form class="form-box" method="POST">
+        <label>予定名</label>
+        <input type="text" name="title" required>
+
+        <label>日時</label>
+        <input type="datetime-local" name="date" required>
+
+        <h2 class="form-title">通知設定</h2>
+
+        <label>前日通知の時刻</label>
+        <input type="time" name="notify_day_before">
+
+        <label>何分前に通知するか</label>
+        <input type="text" name="notify_minutes_before" placeholder="例：120,60,30,10">
+
+        <p class="help-text">
+            複数指定する場合はカンマで区切る。例：120,60,30,10
+        </p>
+
+        <label class="checkbox-label">
+            <input type="checkbox" name="notify_at_time">
+            開始時刻にも通知する
+        </label>
+
+        <button type="submit">保存</button>
+    </form>
+</main>
+
+</body>
+</html>
