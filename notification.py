@@ -9,6 +9,7 @@ JST = ZoneInfo("Asia/Tokyo")
 
 init_db()
 
+
 def create_notifications(schedule_id, title, date, notify_day_before, notify_minutes_before, notify_at_time):
     conn = get_db()
     cur = conn.cursor()
@@ -87,7 +88,7 @@ def notification_loop():
             SELECT id, message
             FROM notifications
             WHERE notify_time <= %s
-            AND sent = FALSE
+            AND sent = 0
             """,
             (now,)
         )
@@ -102,7 +103,11 @@ def notification_loop():
 
             if result == "OK":
                 cur.execute(
-                    "UPDATE notifications SET sent = TRUE WHERE id = %s",
+                    """
+                    UPDATE notifications
+                    SET sent = 1
+                    WHERE id = %s
+                    """,
                     (notification_id,)
                 )
 
