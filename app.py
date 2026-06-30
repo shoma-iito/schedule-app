@@ -37,13 +37,16 @@ def add_one_schedule(title, date, notify_day_before, notify_minutes_before, noti
         """
         INSERT INTO schedules
         (title, date, notify_day_before, notify_minutes_before, notify_at_time)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING id
         """,
         (title, date, notify_day_before, notify_minutes_before, notify_at_time)
     )
 
-    schedule_id = cur.lastrowid
+    schedule_id = cur.fetchone()["id"]
+
     conn.commit()
+    cur.close()
     conn.close()
 
     create_notifications(
@@ -56,22 +59,42 @@ def add_one_schedule(title, date, notify_day_before, notify_minutes_before, noti
     )
 
 
-def create_repeating_schedules(title, first_date, repeat_type, repeat_weekday, repeat_month_day, repeat_end_date, notify_day_before, notify_minutes_before, notify_at_time):
+def create_repeating_schedules(
+    title,
+    first_date,
+    repeat_type,
+    repeat_weekday,
+    repeat_month_day,
+    repeat_end_date,
+    notify_day_before,
+    notify_minutes_before,
+    notify_at_time
+):
     start_dt = datetime.strptime(first_date, "%Y-%m-%dT%H:%M")
 
-    if not repeat_end_date:
-        add_one_schedule(title, first_date, notify_day_before, notify_minutes_before, notify_at_time)
+    if not repeat_end_date or repeat_type == "none":
+        add_one_schedule(
+            title,
+            first_date,
+            notify_day_before,
+            notify_minutes_before,
+            notify_at_time
+        )
         return
 
     end_date = datetime.strptime(repeat_end_date, "%Y-%m-%d").date()
 
-    if repeat_type == "none":
-        add_one_schedule(title, first_date, notify_day_before, notify_minutes_before, notify_at_time)
-
-    elif repeat_type == "daily":
+    if repeat_type == "daily":
         current = start_dt
+
         while current.date() <= end_date:
-            add_one_schedule(title, current.strftime("%Y-%m-%dT%H:%M"), notify_day_before, notify_minutes_before, notify_at_time)
+            add_one_schedule(
+                title,
+                current.strftime("%Y-%m-%dT%H:%M"),
+                notify_day_before,
+                notify_minutes_before,
+                notify_at_time
+            )
             current += timedelta(days=1)
 
     elif repeat_type == "weekly":
@@ -82,7 +105,13 @@ def create_repeating_schedules(title, first_date, repeat_type, repeat_weekday, r
             current += timedelta(days=1)
 
         while current.date() <= end_date:
-            add_one_schedule(title, current.strftime("%Y-%m-%dT%H:%M"), notify_day_before, notify_minutes_before, notify_at_time)
+            add_one_schedule(
+                title,
+                current.strftime("%Y-%m-%dT%H:%M"),
+                notify_day_before,
+                notify_minutes_before,
+                notify_at_time
+            )
             current += timedelta(days=7)
 
     elif repeat_type == "monthly":
@@ -94,12 +123,23 @@ def create_repeating_schedules(title, first_date, repeat_type, repeat_weekday, r
             last_day = calendar.monthrange(year, month)[1]
 
             if target_day <= last_day:
-                current = start_dt.replace(year=year, month=month, day=target_day)
+                current = start_dt.replace(
+                    year=year,
+                    month=month,
+                    day=target_day
+                )
 
                 if current >= start_dt and current.date() <= end_date:
-                    add_one_schedule(title, current.strftime("%Y-%m-%dT%H:%M"), notify_day_before, notify_minutes_before, notify_at_time)
+                    add_one_schedule(
+                        title,
+                        current.strftime("%Y-%m-%dT%H:%M"),
+                        notify_day_before,
+                        notify_minutes_before,
+                        notify_at_time
+                    )
 
             month += 1
+
             if month == 13:
                 month = 1
                 year += 1
@@ -149,9 +189,12 @@ def home():
     month_days = cal.monthdayscalendar(year, month)
 
     conn = get_db()
-    schedules = conn.execute(
-        "SELECT * FROM schedules ORDER BY date"
-    ).fetchall()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM schedules ORDER BY date")
+    schedules = cur.fetchall()
+
+    cur.close()
     conn.close()
 
     return render_template(
@@ -209,6 +252,7 @@ def add():
 @login_required
 def edit(schedule_id):
     conn = get_db()
+    cur = conn.cursor()
 
     if request.method == "POST":
         title = request.form["title"]
@@ -220,17 +264,28 @@ def edit(schedule_id):
         if notify_minutes_before == "":
             notify_minutes_before = None
 
-        conn.execute(
+        cur.execute(
             """
             UPDATE schedules
-            SET title = ?, date = ?, notify_day_before = ?,
-                notify_minutes_before = ?, notify_at_time = ?
-            WHERE id = ?
+            SET title = %s,
+                date = %s,
+                notify_day_before = %s,
+                notify_minutes_before = %s,
+                notify_at_time = %s
+            WHERE id = %s
             """,
-            (title, date, notify_day_before, notify_minutes_before, notify_at_time, schedule_id)
+            (
+                title,
+                date,
+                notify_day_before,
+                notify_minutes_before,
+                notify_at_time,
+                schedule_id
+            )
         )
 
         conn.commit()
+        cur.close()
         conn.close()
 
         create_notifications(
@@ -244,11 +299,13 @@ def edit(schedule_id):
 
         return redirect("/")
 
-    schedule = conn.execute(
-        "SELECT * FROM schedules WHERE id = ?",
+    cur.execute(
+        "SELECT * FROM schedules WHERE id = %s",
         (schedule_id,)
-    ).fetchone()
+    )
+    schedule = cur.fetchone()
 
+    cur.close()
     conn.close()
 
     return render_template("edit.html", schedule=schedule)
@@ -258,18 +315,20 @@ def edit(schedule_id):
 @login_required
 def delete(schedule_id):
     conn = get_db()
+    cur = conn.cursor()
 
-    conn.execute(
-        "DELETE FROM notifications WHERE schedule_id = ?",
+    cur.execute(
+        "DELETE FROM notifications WHERE schedule_id = %s",
         (schedule_id,)
     )
 
-    conn.execute(
-        "DELETE FROM schedules WHERE id = ?",
+    cur.execute(
+        "DELETE FROM schedules WHERE id = %s",
         (schedule_id,)
     )
 
     conn.commit()
+    cur.close()
     conn.close()
 
     return redirect("/")
