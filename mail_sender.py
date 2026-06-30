@@ -8,12 +8,21 @@ MAIL_TO = os.getenv("MAIL_TO")
 
 
 def send_mail(subject, body):
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = MAIL_ADDRESS
-    msg["To"] = MAIL_TO
-
     try:
+        if not MAIL_ADDRESS:
+            return "MAIL_ADDRESS が設定されていません"
+
+        if not MAIL_PASSWORD:
+            return "MAIL_PASSWORD が設定されていません"
+
+        if not MAIL_TO:
+            return "MAIL_TO が設定されていません"
+
+        msg = MIMEText(body, "plain", "utf-8")
+        msg["Subject"] = subject
+        msg["From"] = MAIL_ADDRESS
+        msg["To"] = MAIL_TO
+
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(MAIL_ADDRESS, MAIL_PASSWORD)
             server.send_message(msg)
@@ -21,4 +30,4 @@ def send_mail(subject, body):
         return "OK"
 
     except Exception as e:
-        return str(e)
+        return f"メール送信エラー: {e}"

@@ -14,6 +14,7 @@ init_db()
 thread = threading.Thread(target=notification_loop, daemon=True)
 thread.start()
 
+
 @app.route("/")
 def home():
     today = datetime.today()
@@ -51,6 +52,7 @@ def home():
         today_day=today.day
     )
 
+
 @app.route("/add", methods=["GET", "POST"])
 def add():
     if request.method == "POST":
@@ -76,7 +78,6 @@ def add():
         )
 
         schedule_id = cur.lastrowid
-
         conn.commit()
         conn.close()
 
@@ -92,6 +93,7 @@ def add():
         return redirect("/")
 
     return render_template("add.html")
+
 
 @app.route("/edit/<int:schedule_id>", methods=["GET", "POST"])
 def edit(schedule_id):
@@ -140,6 +142,7 @@ def edit(schedule_id):
 
     return render_template("edit.html", schedule=schedule)
 
+
 @app.route("/delete/<int:schedule_id>", methods=["POST"])
 def delete(schedule_id):
     conn = get_db()
@@ -158,6 +161,7 @@ def delete(schedule_id):
     conn.close()
 
     return redirect("/")
+
 
 @app.route("/test-mail")
 def test_mail():
