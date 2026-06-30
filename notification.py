@@ -1,10 +1,12 @@
 import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
 from database import get_db
 from mail_sender import send_mail
 
 JST = ZoneInfo("Asia/Tokyo")
+
 
 def create_notifications(schedule_id, title, date, notify_day_before, notify_minutes_before, notify_at_time):
     conn = get_db()
@@ -23,7 +25,11 @@ def create_notifications(schedule_id, title, date, notify_day_before, notify_min
 
         conn.execute(
             "INSERT INTO notifications (schedule_id, notify_time, message) VALUES (?, ?, ?)",
-            (schedule_id, notify_time.strftime("%Y-%m-%dT%H:%M"), f"明日「{title}」があります。")
+            (
+                schedule_id,
+                notify_time.strftime("%Y-%m-%dT%H:%M"),
+                f"明日「{title}」があります。"
+            )
         )
 
     if notify_minutes_before:
@@ -46,11 +52,16 @@ def create_notifications(schedule_id, title, date, notify_day_before, notify_min
     if notify_at_time == 1:
         conn.execute(
             "INSERT INTO notifications (schedule_id, notify_time, message) VALUES (?, ?, ?)",
-            (schedule_id, schedule_time.strftime("%Y-%m-%dT%H:%M"), f"「{title}」の時間です。")
+            (
+                schedule_id,
+                schedule_time.strftime("%Y-%m-%dT%H:%M"),
+                f"「{title}」の時間です。"
+            )
         )
 
     conn.commit()
     conn.close()
+
 
 def notification_loop():
     while True:
@@ -71,14 +82,19 @@ def notification_loop():
             notification_id = notification[0]
             message = notification[1]
 
-            send_mail("Schedule App 通知", message)
+            result = send_mail("Schedule App 通知", message)
 
-            conn.execute(
-                "UPDATE notifications SET sent = 1 WHERE id = ?",
-                (notification_id,)
-            )
+            if result == "OK":
+                conn.execute(
+                    "UPDATE notifications SET sent = 1 WHERE id = ?",
+                    (notification_id,)
+                )
 
         conn.commit()
         conn.close()
 
-        time.sleep(60)
+        time.sleep(30)
+
+
+if __name__ == "__main__":
+    notification_loop()
