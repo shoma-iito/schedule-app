@@ -215,3 +215,8 @@ main {
     font-size: 13px;
     margin-top: 6px;
 }
+
+.error-text {
+    color: #dc2626;
+    font-weight: bold;
+}

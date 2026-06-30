@@ -1,13 +1,19 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session
 import calendar
 import threading
 from datetime import datetime
+from functools import wraps
+import os
 
 from database import get_db, init_db
 from notification import create_notifications, notification_loop
 from mail_sender import send_mail
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
+
+LOGIN_USERNAME = os.getenv("LOGIN_USERNAME")
+LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 
 init_db()
 
@@ -15,7 +21,40 @@ thread = threading.Thread(target=notification_loop, daemon=True)
 thread.start()
 
 
+def login_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect("/login")
+        return func(*args, **kwargs)
+    return wrapper
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        if username == LOGIN_USERNAME and password == LOGIN_PASSWORD:
+            session["logged_in"] = True
+            return redirect("/")
+        else:
+            error = "IDまたはパスワードが違います。"
+
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
 @app.route("/")
+@login_required
 def home():
     today = datetime.today()
 
@@ -54,6 +93,7 @@ def home():
 
 
 @app.route("/add", methods=["GET", "POST"])
+@login_required
 def add():
     if request.method == "POST":
         title = request.form["title"]
@@ -96,6 +136,7 @@ def add():
 
 
 @app.route("/edit/<int:schedule_id>", methods=["GET", "POST"])
+@login_required
 def edit(schedule_id):
     conn = get_db()
 
@@ -144,6 +185,7 @@ def edit(schedule_id):
 
 
 @app.route("/delete/<int:schedule_id>", methods=["POST"])
+@login_required
 def delete(schedule_id):
     conn = get_db()
 
@@ -164,6 +206,7 @@ def delete(schedule_id):
 
 
 @app.route("/test-mail")
+@login_required
 def test_mail():
     result = send_mail(
         "Schedule App テスト通知",
@@ -171,17 +214,6 @@ def test_mail():
     )
 
     return str(result)
-
-
-@app.route("/env-check")
-def env_check():
-    import os
-
-    return {
-        "MAIL_ADDRESS": bool(os.getenv("MAIL_ADDRESS")),
-        "MAIL_PASSWORD": bool(os.getenv("MAIL_PASSWORD")),
-        "MAIL_TO": bool(os.getenv("MAIL_TO"))
-    }
 
 
 if __name__ == "__main__":

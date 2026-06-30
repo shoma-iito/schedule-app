@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログイン</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Schedule App</h1>
+</header>
+
+<main>
+    <form class="form-box" method="POST">
+        <h2 class="form-title">ログイン</h2>
+
+        {% if error %}
+            <p class="error-text">{{ error }}</p>
+        {% endif %}
+
+        <label>ID</label>
+        <input type="text" name="username" required>
+
+        <label>パスワード</label>
+        <input type="password" name="password" required>
+
+        <button type="submit">ログイン</button>
+    </form>
+</main>
+
+</body>
+</html>
