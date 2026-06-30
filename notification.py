@@ -2,11 +2,12 @@ import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from database import get_db
+from database import get_db, init_db
 from mail_sender import send_mail
 
 JST = ZoneInfo("Asia/Tokyo")
 
+init_db()
 
 def create_notifications(schedule_id, title, date, notify_day_before, notify_minutes_before, notify_at_time):
     conn = get_db()
