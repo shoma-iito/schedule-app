@@ -165,12 +165,18 @@ def delete(schedule_id):
 
 @app.route("/test-mail")
 def test_mail():
-    result = send_mail(
-        "Schedule App テスト通知",
-        "メール送信テストです。"
-    )
+    return "test-mail route OK"
 
-    return str(result)
+
+@app.route("/env-check")
+def env_check():
+    import os
+
+    return {
+        "MAIL_ADDRESS": bool(os.getenv("MAIL_ADDRESS")),
+        "MAIL_PASSWORD": bool(os.getenv("MAIL_PASSWORD")),
+        "MAIL_TO": bool(os.getenv("MAIL_TO"))
+    }
 
 
 if __name__ == "__main__":
