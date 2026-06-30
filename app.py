@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, redirect, session
 import calendar
-import threading
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from functools import wraps
 import os
 
 from database import get_db, init_db
-from notification import create_notifications, notification_loop
+from notification import create_notifications
 from mail_sender import send_mail
 
 app = Flask(__name__)
@@ -15,10 +15,9 @@ app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 LOGIN_USERNAME = os.getenv("LOGIN_USERNAME")
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 
-init_db()
+JST = ZoneInfo("Asia/Tokyo")
 
-thread = threading.Thread(target=notification_loop, daemon=True)
-thread.start()
+init_db()
 
 
 def login_required(func):
@@ -56,7 +55,7 @@ def logout():
 @app.route("/")
 @login_required
 def home():
-    today = datetime.today()
+    today = datetime.now(JST)
 
     year = request.args.get("year", today.year, type=int)
     month = request.args.get("month", today.month, type=int)
