@@ -11,9 +11,10 @@ init_db()
 
 def create_notifications(schedule_id, title, date, notify_day_before, notify_minutes_before, notify_at_time):
     conn = get_db()
+    cur = conn.cursor()
 
-    conn.execute(
-        "DELETE FROM notifications WHERE schedule_id = ?",
+    cur.execute(
+        "DELETE FROM notifications WHERE schedule_id = %s",
         (schedule_id,)
     )
 
@@ -24,8 +25,11 @@ def create_notifications(schedule_id, title, date, notify_day_before, notify_min
         h, m = map(int, notify_day_before.split(":"))
         notify_time = day_before.replace(hour=h, minute=m)
 
-        conn.execute(
-            "INSERT INTO notifications (schedule_id, notify_time, message) VALUES (?, ?, ?)",
+        cur.execute(
+            """
+            INSERT INTO notifications (schedule_id, notify_time, message)
+            VALUES (%s, %s, %s)
+            """,
             (
                 schedule_id,
                 notify_time.strftime("%Y-%m-%dT%H:%M"),
@@ -41,8 +45,11 @@ def create_notifications(schedule_id, title, date, notify_day_before, notify_min
                 minutes_int = int(minutes)
                 notify_time = schedule_time - timedelta(minutes=minutes_int)
 
-                conn.execute(
-                    "INSERT INTO notifications (schedule_id, notify_time, message) VALUES (?, ?, ?)",
+                cur.execute(
+                    """
+                    INSERT INTO notifications (schedule_id, notify_time, message)
+                    VALUES (%s, %s, %s)
+                    """,
                     (
                         schedule_id,
                         notify_time.strftime("%Y-%m-%dT%H:%M"),
@@ -51,8 +58,11 @@ def create_notifications(schedule_id, title, date, notify_day_before, notify_min
                 )
 
     if notify_at_time == 1:
-        conn.execute(
-            "INSERT INTO notifications (schedule_id, notify_time, message) VALUES (?, ?, ?)",
+        cur.execute(
+            """
+            INSERT INTO notifications (schedule_id, notify_time, message)
+            VALUES (%s, %s, %s)
+            """,
             (
                 schedule_id,
                 schedule_time.strftime("%Y-%m-%dT%H:%M"),
@@ -61,6 +71,7 @@ def create_notifications(schedule_id, title, date, notify_day_before, notify_min
         )
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
@@ -69,15 +80,19 @@ def notification_loop():
         now = datetime.now(JST).strftime("%Y-%m-%dT%H:%M")
 
         conn = get_db()
-        notifications = conn.execute(
+        cur = conn.cursor()
+
+        cur.execute(
             """
             SELECT id, message
             FROM notifications
-            WHERE notify_time <= ?
-            AND sent = 0
+            WHERE notify_time <= %s
+            AND sent = FALSE
             """,
             (now,)
-        ).fetchall()
+        )
+
+        notifications = cur.fetchall()
 
         for notification in notifications:
             notification_id = notification[0]
@@ -86,12 +101,13 @@ def notification_loop():
             result = send_mail("Schedule App 通知", message)
 
             if result == "OK":
-                conn.execute(
-                    "UPDATE notifications SET sent = 1 WHERE id = ?",
+                cur.execute(
+                    "UPDATE notifications SET sent = TRUE WHERE id = %s",
                     (notification_id,)
                 )
 
         conn.commit()
+        cur.close()
         conn.close()
 
         time.sleep(30)
