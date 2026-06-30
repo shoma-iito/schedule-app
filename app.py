@@ -161,7 +161,13 @@ def delete(schedule_id):
 
 @app.route("/test-mail")
 def test_mail():
-    return "test-mail route OK"
+    result = send_mail(
+        "Schedule App テスト通知",
+        "メール送信テストです。"
+    )
+
+    return str(result)
+
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)

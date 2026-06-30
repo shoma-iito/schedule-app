@@ -13,6 +13,12 @@ def send_mail(subject, body):
     msg["From"] = MAIL_ADDRESS
     msg["To"] = MAIL_TO
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(MAIL_ADDRESS, MAIL_PASSWORD)
-        server.send_message(msg)
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(MAIL_ADDRESS, MAIL_PASSWORD)
+            server.send_message(msg)
+
+        return "OK"
+
+    except Exception as e:
+        return str(e)
