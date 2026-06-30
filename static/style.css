@@ -119,11 +119,14 @@ button:hover {
 @media (max-width: 768px) {
 
     header {
-        padding: 15px;
+        padding: 15px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     header h1 {
-        font-size: 22px;
+        font-size: 24px;
     }
 
     .add-button {
@@ -131,41 +134,39 @@ button:hover {
         font-size: 14px;
     }
 
-    main {
-        width: 100%;
-        margin: 0;
-        padding: 12px;
-    }
-
+    /* 予定追加フォームだけスマホで大きくする */
     .form-box {
-        width: 100%;
+        width: 92vw;
         max-width: none;
-        margin: 0;
-        padding: 20px;
-        border-radius: 12px;
+        margin: 20px auto;
+        padding: 28px;
+        border-radius: 14px;
     }
 
-    input,
-    select,
-    textarea,
-    button {
+    .form-box input,
+    .form-box select,
+    .form-box textarea,
+    .form-box button {
         width: 100%;
-        font-size: 16px;
+        font-size: 18px;
+        padding: 14px;
     }
 
-    label {
-        font-size: 16px;
+    .form-box label {
+        font-size: 18px;
+        margin-top: 20px;
     }
 
     .form-title {
-        font-size: 24px;
+        font-size: 26px;
+        margin-top: 30px;
     }
 
     .help-text {
-        font-size: 13px;
+        font-size: 15px;
     }
 
     .checkbox-label {
-        font-size: 16px;
+        font-size: 17px;
     }
 }
