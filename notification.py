@@ -1,7 +1,10 @@
 import time
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from database import get_db
 from mail_sender import send_mail
+
+JST = ZoneInfo("Asia/Tokyo")
 
 def create_notifications(schedule_id, title, date, notify_day_before, notify_minutes_before, notify_at_time):
     conn = get_db()
@@ -51,7 +54,7 @@ def create_notifications(schedule_id, title, date, notify_day_before, notify_min
 
 def notification_loop():
     while True:
-        now = datetime.now().strftime("%Y-%m-%dT%H:%M")
+        now = datetime.now(JST).strftime("%Y-%m-%dT%H:%M")
 
         conn = get_db()
         notifications = conn.execute(
