@@ -20,6 +20,33 @@
         <label>日時</label>
         <input type="datetime-local" name="date" required>
 
+        <h2 class="form-title">繰り返し設定</h2>
+
+        <label>繰り返し</label>
+        <select name="repeat_type">
+            <option value="none">繰り返しなし</option>
+            <option value="daily">毎日</option>
+            <option value="weekly">毎週</option>
+            <option value="monthly">毎月</option>
+        </select>
+
+        <label>毎週の場合：曜日</label>
+        <select name="repeat_weekday">
+            <option value="0">月曜日</option>
+            <option value="1">火曜日</option>
+            <option value="2">水曜日</option>
+            <option value="3">木曜日</option>
+            <option value="4">金曜日</option>
+            <option value="5">土曜日</option>
+            <option value="6">日曜日</option>
+        </select>
+
+        <label>毎月の場合：日付</label>
+        <input type="number" name="repeat_month_day" min="1" max="31" value="1">
+
+        <label>繰り返し終了日</label>
+        <input type="date" name="repeat_end_date">
+
         <h2 class="form-title">通知設定</h2>
 
         <label>前日通知の時刻</label>

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, session
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from functools import wraps
 import os
@@ -27,6 +27,85 @@ def login_required(func):
             return redirect("/login")
         return func(*args, **kwargs)
     return wrapper
+
+
+def add_one_schedule(title, date, notify_day_before, notify_minutes_before, notify_at_time):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        INSERT INTO schedules
+        (title, date, notify_day_before, notify_minutes_before, notify_at_time)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (title, date, notify_day_before, notify_minutes_before, notify_at_time)
+    )
+
+    schedule_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    create_notifications(
+        schedule_id,
+        title,
+        date,
+        notify_day_before,
+        notify_minutes_before,
+        notify_at_time
+    )
+
+
+def create_repeating_schedules(title, first_date, repeat_type, repeat_weekday, repeat_month_day, repeat_end_date, notify_day_before, notify_minutes_before, notify_at_time):
+    start_dt = datetime.strptime(first_date, "%Y-%m-%dT%H:%M")
+
+    if not repeat_end_date:
+        add_one_schedule(title, first_date, notify_day_before, notify_minutes_before, notify_at_time)
+        return
+
+    end_date = datetime.strptime(repeat_end_date, "%Y-%m-%d").date()
+
+    if repeat_type == "none":
+        add_one_schedule(title, first_date, notify_day_before, notify_minutes_before, notify_at_time)
+
+    elif repeat_type == "daily":
+        current = start_dt
+        while current.date() <= end_date:
+            add_one_schedule(title, current.strftime("%Y-%m-%dT%H:%M"), notify_day_before, notify_minutes_before, notify_at_time)
+            current += timedelta(days=1)
+
+    elif repeat_type == "weekly":
+        target_weekday = int(repeat_weekday)
+        current = start_dt
+
+        while current.weekday() != target_weekday:
+            current += timedelta(days=1)
+
+        while current.date() <= end_date:
+            add_one_schedule(title, current.strftime("%Y-%m-%dT%H:%M"), notify_day_before, notify_minutes_before, notify_at_time)
+            current += timedelta(days=7)
+
+    elif repeat_type == "monthly":
+        target_day = int(repeat_month_day)
+        year = start_dt.year
+        month = start_dt.month
+
+        while True:
+            last_day = calendar.monthrange(year, month)[1]
+
+            if target_day <= last_day:
+                current = start_dt.replace(year=year, month=month, day=target_day)
+
+                if current >= start_dt and current.date() <= end_date:
+                    add_one_schedule(title, current.strftime("%Y-%m-%dT%H:%M"), notify_day_before, notify_minutes_before, notify_at_time)
+
+            month += 1
+            if month == 13:
+                month = 1
+                year += 1
+
+            if datetime(year, month, 1).date() > end_date:
+                break
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -101,29 +180,21 @@ def add():
         notify_minutes_before = request.form.get("notify_minutes_before")
         notify_at_time = 1 if request.form.get("notify_at_time") else 0
 
+        repeat_type = request.form.get("repeat_type", "none")
+        repeat_weekday = request.form.get("repeat_weekday", "0")
+        repeat_month_day = request.form.get("repeat_month_day", "1")
+        repeat_end_date = request.form.get("repeat_end_date")
+
         if notify_minutes_before == "":
             notify_minutes_before = None
 
-        conn = get_db()
-        cur = conn.cursor()
-
-        cur.execute(
-            """
-            INSERT INTO schedules
-            (title, date, notify_day_before, notify_minutes_before, notify_at_time)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (title, date, notify_day_before, notify_minutes_before, notify_at_time)
-        )
-
-        schedule_id = cur.lastrowid
-        conn.commit()
-        conn.close()
-
-        create_notifications(
-            schedule_id,
+        create_repeating_schedules(
             title,
             date,
+            repeat_type,
+            repeat_weekday,
+            repeat_month_day,
+            repeat_end_date,
             notify_day_before,
             notify_minutes_before,
             notify_at_time
