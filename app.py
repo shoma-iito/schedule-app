@@ -29,18 +29,36 @@ def login_required(func):
     return wrapper
 
 
-def add_one_schedule(title, date, notify_day_before, notify_minutes_before, notify_at_time):
+def add_one_schedule(
+    title,
+    date,
+    notify_day_before,
+    notify_minutes_before,
+    notify_at_time
+):
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute(
         """
         INSERT INTO schedules
-        (title, date, notify_day_before, notify_minutes_before, notify_at_time)
+        (
+            title,
+            date,
+            notify_day_before,
+            notify_minutes_before,
+            notify_at_time
+        )
         VALUES (%s, %s, %s, %s, %s)
         RETURNING id
         """,
-        (title, date, notify_day_before, notify_minutes_before, notify_at_time)
+        (
+            title,
+            date,
+            notify_day_before,
+            notify_minutes_before,
+            notify_at_time
+        )
     )
 
     schedule_id = cur.fetchone()["id"]
@@ -70,20 +88,17 @@ def create_repeating_schedules(
     notify_minutes_before,
     notify_at_time
 ):
-    start_dt = datetime.strptime(first_date, "%Y-%m-%dT%H:%M")
+    start_dt = datetime.strptime(
+        first_date,
+        "%Y-%m-%dT%H:%M"
+    )
 
-    if not repeat_end_date or repeat_type == "none":
-        add_one_schedule(
-            title,
-            first_date,
-            notify_day_before,
-            notify_minutes_before,
-            notify_at_time
-        )
-        return
+    end_date = datetime.strptime(
+        repeat_end_date,
+        "%Y-%m-%d"
+    ).date()
 
-    end_date = datetime.strptime(repeat_end_date, "%Y-%m-%d").date()
-
+    # 毎日
     if repeat_type == "daily":
         current = start_dt
 
@@ -95,15 +110,19 @@ def create_repeating_schedules(
                 notify_minutes_before,
                 notify_at_time
             )
+
             current += timedelta(days=1)
 
+    # 毎週
     elif repeat_type == "weekly":
         target_weekday = int(repeat_weekday)
         current = start_dt
 
+        # 指定した曜日まで進める
         while current.weekday() != target_weekday:
             current += timedelta(days=1)
 
+        # 終了日まで毎週登録
         while current.date() <= end_date:
             add_one_schedule(
                 title,
@@ -112,15 +131,21 @@ def create_repeating_schedules(
                 notify_minutes_before,
                 notify_at_time
             )
+
             current += timedelta(days=7)
 
+    # 毎月
     elif repeat_type == "monthly":
         target_day = int(repeat_month_day)
+
         year = start_dt.year
         month = start_dt.month
 
         while True:
-            last_day = calendar.monthrange(year, month)[1]
+            last_day = calendar.monthrange(
+                year,
+                month
+            )[1]
 
             if target_day <= last_day:
                 current = start_dt.replace(
@@ -129,10 +154,15 @@ def create_repeating_schedules(
                     day=target_day
                 )
 
-                if current >= start_dt and current.date() <= end_date:
+                if (
+                    current >= start_dt
+                    and current.date() <= end_date
+                ):
                     add_one_schedule(
                         title,
-                        current.strftime("%Y-%m-%dT%H:%M"),
+                        current.strftime(
+                            "%Y-%m-%dT%H:%M"
+                        ),
                         notify_day_before,
                         notify_minutes_before,
                         notify_at_time
@@ -144,7 +174,11 @@ def create_repeating_schedules(
                 month = 1
                 year += 1
 
-            if datetime(year, month, 1).date() > end_date:
+            if datetime(
+                year,
+                month,
+                1
+            ).date() > end_date:
                 break
 
 
@@ -156,13 +190,19 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        if username == LOGIN_USERNAME and password == LOGIN_PASSWORD:
+        if (
+            username == LOGIN_USERNAME
+            and password == LOGIN_PASSWORD
+        ):
             session["logged_in"] = True
             return redirect("/")
-        else:
-            error = "IDまたはパスワードが違います。"
 
-    return render_template("login.html", error=error)
+        error = "IDまたはパスワードが違います。"
+
+    return render_template(
+        "login.html",
+        error=error
+    )
 
 
 @app.route("/logout")
@@ -176,8 +216,17 @@ def logout():
 def home():
     today = datetime.now(JST)
 
-    year = request.args.get("year", today.year, type=int)
-    month = request.args.get("month", today.month, type=int)
+    year = request.args.get(
+        "year",
+        today.year,
+        type=int
+    )
+
+    month = request.args.get(
+        "month",
+        today.month,
+        type=int
+    )
 
     prev_year = year - 1 if month == 1 else year
     prev_month = 12 if month == 1 else month - 1
@@ -186,12 +235,19 @@ def home():
     next_month = 1 if month == 12 else month + 1
 
     cal = calendar.Calendar(firstweekday=6)
-    month_days = cal.monthdayscalendar(year, month)
+
+    month_days = cal.monthdayscalendar(
+        year,
+        month
+    )
 
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM schedules ORDER BY date")
+    cur.execute(
+        "SELECT * FROM schedules ORDER BY date"
+    )
+
     schedules = cur.fetchall()
 
     cur.close()
@@ -213,27 +269,100 @@ def home():
     )
 
 
+# =========================
+# 通常の予定追加
+# =========================
+
 @app.route("/add", methods=["GET", "POST"])
 @login_required
 def add():
     if request.method == "POST":
         title = request.form["title"]
         date = request.form["date"]
-        notify_day_before = request.form.get("notify_day_before")
-        notify_minutes_before = request.form.get("notify_minutes_before")
-        notify_at_time = 1 if request.form.get("notify_at_time") else 0
 
-        repeat_type = request.form.get("repeat_type", "none")
-        repeat_weekday = request.form.get("repeat_weekday", "0")
-        repeat_month_day = request.form.get("repeat_month_day", "1")
-        repeat_end_date = request.form.get("repeat_end_date")
+        notify_day_before = request.form.get(
+            "notify_day_before"
+        )
+
+        notify_minutes_before = request.form.get(
+            "notify_minutes_before"
+        )
+
+        notify_at_time = (
+            1
+            if request.form.get("notify_at_time")
+            else 0
+        )
 
         if notify_minutes_before == "":
             notify_minutes_before = None
 
-        create_repeating_schedules(
+        add_one_schedule(
             title,
             date,
+            notify_day_before,
+            notify_minutes_before,
+            notify_at_time
+        )
+
+        return redirect("/")
+
+    return render_template("add.html")
+
+
+# =========================
+# 繰り返し予定
+# =========================
+
+@app.route("/repeat", methods=["GET", "POST"])
+@login_required
+def repeat():
+    if request.method == "POST":
+        title = request.form["title"]
+
+        start_date = request.form["start_date"]
+        time_value = request.form["time"]
+
+        repeat_type = request.form["repeat_type"]
+
+        repeat_weekday = request.form.get(
+            "repeat_weekday",
+            "0"
+        )
+
+        repeat_month_day = request.form.get(
+            "repeat_month_day",
+            "1"
+        )
+
+        repeat_end_date = request.form[
+            "repeat_end_date"
+        ]
+
+        notify_day_before = request.form.get(
+            "notify_day_before"
+        )
+
+        notify_minutes_before = request.form.get(
+            "notify_minutes_before"
+        )
+
+        notify_at_time = (
+            1
+            if request.form.get("notify_at_time")
+            else 0
+        )
+
+        if notify_minutes_before == "":
+            notify_minutes_before = None
+
+        first_date = (
+            f"{start_date}T{time_value}"
+        )
+
+        create_repeating_schedules(
+            title,
+            first_date,
             repeat_type,
             repeat_weekday,
             repeat_month_day,
@@ -245,10 +374,13 @@ def add():
 
         return redirect("/")
 
-    return render_template("add.html")
+    return render_template("repeat.html")
 
 
-@app.route("/edit/<int:schedule_id>", methods=["GET", "POST"])
+@app.route(
+    "/edit/<int:schedule_id>",
+    methods=["GET", "POST"]
+)
 @login_required
 def edit(schedule_id):
     conn = get_db()
@@ -257,9 +389,20 @@ def edit(schedule_id):
     if request.method == "POST":
         title = request.form["title"]
         date = request.form["date"]
-        notify_day_before = request.form.get("notify_day_before")
-        notify_minutes_before = request.form.get("notify_minutes_before")
-        notify_at_time = 1 if request.form.get("notify_at_time") else 0
+
+        notify_day_before = request.form.get(
+            "notify_day_before"
+        )
+
+        notify_minutes_before = request.form.get(
+            "notify_minutes_before"
+        )
+
+        notify_at_time = (
+            1
+            if request.form.get("notify_at_time")
+            else 0
+        )
 
         if notify_minutes_before == "":
             notify_minutes_before = None
@@ -267,7 +410,8 @@ def edit(schedule_id):
         cur.execute(
             """
             UPDATE schedules
-            SET title = %s,
+            SET
+                title = %s,
                 date = %s,
                 notify_day_before = %s,
                 notify_minutes_before = %s,
@@ -300,30 +444,47 @@ def edit(schedule_id):
         return redirect("/")
 
     cur.execute(
-        "SELECT * FROM schedules WHERE id = %s",
+        """
+        SELECT *
+        FROM schedules
+        WHERE id = %s
+        """,
         (schedule_id,)
     )
+
     schedule = cur.fetchone()
 
     cur.close()
     conn.close()
 
-    return render_template("edit.html", schedule=schedule)
+    return render_template(
+        "edit.html",
+        schedule=schedule
+    )
 
 
-@app.route("/delete/<int:schedule_id>", methods=["POST"])
+@app.route(
+    "/delete/<int:schedule_id>",
+    methods=["POST"]
+)
 @login_required
 def delete(schedule_id):
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute(
-        "DELETE FROM notifications WHERE schedule_id = %s",
+        """
+        DELETE FROM notifications
+        WHERE schedule_id = %s
+        """,
         (schedule_id,)
     )
 
     cur.execute(
-        "DELETE FROM schedules WHERE id = %s",
+        """
+        DELETE FROM schedules
+        WHERE id = %s
+        """,
         (schedule_id,)
     )
 
@@ -346,4 +507,7 @@ def test_mail():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(
+        debug=True,
+        use_reloader=False
+    )

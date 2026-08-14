@@ -221,3 +221,29 @@ main {
     color: #dc2626;
     font-weight: bold;
 }
+
+.header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.repeat-button {
+    background: #16a34a;
+    color: white;
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.repeat-button:hover {
+    background: #15803d;
+}
+
+.form-box select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    box-sizing: border-box;
+}

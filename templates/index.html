@@ -9,13 +9,19 @@
 
 <header>
     <h1>Schedule App</h1>
-    <a class="add-button" href="/add">＋予定追加</a>
+
+    <div class="header-buttons">
+        <a class="repeat-button" href="/repeat">↻ 繰り返し設定</a>
+        <a class="add-button" href="/add">＋予定追加</a>
+    </div>
 </header>
 
 <main>
     <div class="month-header">
         <a class="month-button" href="/?year={{ prev_year }}&month={{ prev_month }}">← 前月</a>
+
         <h2>{{ year }}年 {{ month }}月</h2>
+
         <a class="month-button" href="/?year={{ next_year }}&month={{ next_month }}">翌月 →</a>
     </div>
 
@@ -35,6 +41,7 @@
             {% for day in week %}
             <td>
                 {% if day != 0 %}
+
                     {% if year == today_year and month == today_month and day == today_day %}
                         <div class="day today">{{ day }}</div>
                     {% else %}
@@ -42,12 +49,21 @@
                     {% endif %}
 
                     {% for schedule in schedules %}
-                        {% if schedule[2][0:4]|int == year and schedule[2][5:7]|int == month and schedule[2][8:10]|int == day %}
+
+                        {% if
+                            schedule[2][0:4]|int == year
+                            and schedule[2][5:7]|int == month
+                            and schedule[2][8:10]|int == day
+                        %}
+
                             <a class="event" href="/edit/{{ schedule[0] }}">
                                 {{ schedule[1] }}
                             </a>
+
                         {% endif %}
+
                     {% endfor %}
+
                 {% endif %}
             </td>
             {% endfor %}
@@ -62,8 +78,12 @@
             {% for schedule in schedules %}
                 <li>
                     <span>{{ schedule[1] }}</span>
+
                     <small>{{ schedule[2] }}</small>
-                    <a class="edit-link" href="/edit/{{ schedule[0] }}">編集</a>
+
+                    <a class="edit-link" href="/edit/{{ schedule[0] }}">
+                        編集
+                    </a>
                 </li>
             {% endfor %}
         </ul>

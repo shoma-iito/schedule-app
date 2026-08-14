@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>繰り返し設定</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header>
+    <h1>繰り返し設定</h1>
+    <a href="/" class="add-button">戻る</a>
+</header>
+
+<main>
+
+    <div class="form-box">
+
+        <form method="POST">
+
+            <label>予定名</label>
+            <input type="text" name="title" required>
+
+            <label>開始日</label>
+            <input type="date" name="start_date" required>
+
+            <label>時刻</label>
+            <input type="time" name="time" required>
+
+            <h2 class="form-title">繰り返し設定</h2>
+
+            <label>繰り返し</label>
+            <select name="repeat_type" id="repeat_type">
+                <option value="daily">毎日</option>
+                <option value="weekly">毎週</option>
+                <option value="monthly">毎月</option>
+            </select>
+
+            <div id="weekly-area">
+                <label>曜日</label>
+
+                <select name="repeat_weekday">
+                    <option value="0">月曜日</option>
+                    <option value="1">火曜日</option>
+                    <option value="2">水曜日</option>
+                    <option value="3">木曜日</option>
+                    <option value="4">金曜日</option>
+                    <option value="5">土曜日</option>
+                    <option value="6">日曜日</option>
+                </select>
+            </div>
+
+            <div id="monthly-area">
+                <label>毎月何日</label>
+                <input
+                    type="number"
+                    name="repeat_month_day"
+                    min="1"
+                    max="31"
+                    value="1"
+                >
+            </div>
+
+            <label>繰り返し終了日</label>
+            <input type="date" name="repeat_end_date" required>
+
+            <h2 class="form-title">通知設定</h2>
+
+            <label>前日通知の時刻</label>
+            <input type="time" name="notify_day_before">
+
+            <label>何分前に通知するか</label>
+            <input
+                type="text"
+                name="notify_minutes_before"
+                placeholder="例：120,60,30,10"
+            >
+
+            <p class="help-text">
+                複数指定する場合はカンマで区切る。例：120,60,30,10
+            </p>
+
+            <label class="checkbox-label">
+                <input type="checkbox" name="notify_at_time">
+                開始時刻にも通知する
+            </label>
+
+            <button type="submit">
+                繰り返し予定を登録
+            </button>
+
+        </form>
+
+    </div>
+
+</main>
+
+<script>
+const repeatType = document.getElementById("repeat_type");
+const weeklyArea = document.getElementById("weekly-area");
+const monthlyArea = document.getElementById("monthly-area");
+
+function updateRepeatFields() {
+    weeklyArea.style.display = "none";
+    monthlyArea.style.display = "none";
+
+    if (repeatType.value === "weekly") {
+        weeklyArea.style.display = "block";
+    }
+
+    if (repeatType.value === "monthly") {
+        monthlyArea.style.display = "block";
+    }
+}
+
+repeatType.addEventListener("change", updateRepeatFields);
+updateRepeatFields();
+</script>
+
+</body>
+</html>
