@@ -9,6 +9,7 @@ from database import get_db, init_db
 from notification import create_notifications
 from mail_sender import send_mail
 
+
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 
@@ -20,18 +21,29 @@ JST = ZoneInfo("Asia/Tokyo")
 init_db()
 
 
+# =========================================
+# ログイン確認
+# =========================================
+
 def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect("/login")
+
         return func(*args, **kwargs)
+
     return wrapper
 
+
+# =========================================
+# 予定を1件追加
+# =========================================
 
 def add_one_schedule(
     title,
     date,
+    end_date,
     notify_day_before,
     notify_minutes_before,
     notify_at_time
@@ -45,28 +57,36 @@ def add_one_schedule(
         (
             title,
             date,
+            end_date,
             notify_day_before,
             notify_minutes_before,
             notify_at_time
         )
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
         (
             title,
             date,
+            end_date,
             notify_day_before,
             notify_minutes_before,
             notify_at_time
         )
     )
 
-    schedule_id = cur.fetchone()["id"]
+    row = cur.fetchone()
+
+    try:
+        schedule_id = row["id"]
+    except (TypeError, KeyError):
+        schedule_id = row[0]
 
     conn.commit()
     cur.close()
     conn.close()
 
+    # 通知は開始日時を基準にする
     create_notifications(
         schedule_id,
         title,
@@ -76,6 +96,10 @@ def add_one_schedule(
         notify_at_time
     )
 
+
+# =========================================
+# 繰り返し予定
+# =========================================
 
 def create_repeating_schedules(
     title,
@@ -106,6 +130,7 @@ def create_repeating_schedules(
             add_one_schedule(
                 title,
                 current.strftime("%Y-%m-%dT%H:%M"),
+                None,
                 notify_day_before,
                 notify_minutes_before,
                 notify_at_time
@@ -118,15 +143,16 @@ def create_repeating_schedules(
         target_weekday = int(repeat_weekday)
         current = start_dt
 
-        # 指定した曜日まで進める
+        # 指定曜日まで進める
         while current.weekday() != target_weekday:
             current += timedelta(days=1)
 
-        # 終了日まで毎週登録
+        # 終了日まで毎週追加
         while current.date() <= end_date:
             add_one_schedule(
                 title,
                 current.strftime("%Y-%m-%dT%H:%M"),
+                None,
                 notify_day_before,
                 notify_minutes_before,
                 notify_at_time
@@ -160,9 +186,8 @@ def create_repeating_schedules(
                 ):
                     add_one_schedule(
                         title,
-                        current.strftime(
-                            "%Y-%m-%dT%H:%M"
-                        ),
+                        current.strftime("%Y-%m-%dT%H:%M"),
+                        None,
                         notify_day_before,
                         notify_minutes_before,
                         notify_at_time
@@ -174,13 +199,13 @@ def create_repeating_schedules(
                 month = 1
                 year += 1
 
-            if datetime(
-                year,
-                month,
-                1
-            ).date() > end_date:
+            if datetime(year, month, 1).date() > end_date:
                 break
 
+
+# =========================================
+# ログイン
+# =========================================
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -210,6 +235,10 @@ def logout():
     session.clear()
     return redirect("/login")
 
+
+# =========================================
+# カレンダー
+# =========================================
 
 @app.route("/")
 @login_required
@@ -245,7 +274,11 @@ def home():
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT * FROM schedules ORDER BY date"
+        """
+        SELECT *
+        FROM schedules
+        ORDER BY date
+        """
     )
 
     schedules = cur.fetchall()
@@ -269,16 +302,42 @@ def home():
     )
 
 
-# =========================
-# 通常の予定追加
-# =========================
+# =========================================
+# 通常予定追加
+# =========================================
 
 @app.route("/add", methods=["GET", "POST"])
 @login_required
 def add():
     if request.method == "POST":
         title = request.form["title"]
+
+        # 開始日時
         date = request.form["date"]
+
+        # 終了日時
+        end_date = request.form.get("end_date")
+
+        if end_date == "":
+            end_date = None
+
+        # 終了日時がある場合は前後関係を確認
+        if end_date:
+            start_dt = datetime.strptime(
+                date,
+                "%Y-%m-%dT%H:%M"
+            )
+
+            finish_dt = datetime.strptime(
+                end_date,
+                "%Y-%m-%dT%H:%M"
+            )
+
+            if finish_dt < start_dt:
+                return (
+                    "終了日時は開始日時より後にしてください。",
+                    400
+                )
 
         notify_day_before = request.form.get(
             "notify_day_before"
@@ -300,6 +359,7 @@ def add():
         add_one_schedule(
             title,
             date,
+            end_date,
             notify_day_before,
             notify_minutes_before,
             notify_at_time
@@ -310,9 +370,9 @@ def add():
     return render_template("add.html")
 
 
-# =========================
+# =========================================
 # 繰り返し予定
-# =========================
+# =========================================
 
 @app.route("/repeat", methods=["GET", "POST"])
 @login_required
@@ -377,6 +437,10 @@ def repeat():
     return render_template("repeat.html")
 
 
+# =========================================
+# 編集
+# =========================================
+
 @app.route(
     "/edit/<int:schedule_id>",
     methods=["GET", "POST"]
@@ -388,7 +452,33 @@ def edit(schedule_id):
 
     if request.method == "POST":
         title = request.form["title"]
+
         date = request.form["date"]
+
+        end_date = request.form.get("end_date")
+
+        if end_date == "":
+            end_date = None
+
+        if end_date:
+            start_dt = datetime.strptime(
+                date,
+                "%Y-%m-%dT%H:%M"
+            )
+
+            finish_dt = datetime.strptime(
+                end_date,
+                "%Y-%m-%dT%H:%M"
+            )
+
+            if finish_dt < start_dt:
+                cur.close()
+                conn.close()
+
+                return (
+                    "終了日時は開始日時より後にしてください。",
+                    400
+                )
 
         notify_day_before = request.form.get(
             "notify_day_before"
@@ -413,6 +503,7 @@ def edit(schedule_id):
             SET
                 title = %s,
                 date = %s,
+                end_date = %s,
                 notify_day_before = %s,
                 notify_minutes_before = %s,
                 notify_at_time = %s
@@ -421,6 +512,7 @@ def edit(schedule_id):
             (
                 title,
                 date,
+                end_date,
                 notify_day_before,
                 notify_minutes_before,
                 notify_at_time,
@@ -432,6 +524,7 @@ def edit(schedule_id):
         cur.close()
         conn.close()
 
+        # 通知を作り直す
         create_notifications(
             schedule_id,
             title,
@@ -462,6 +555,10 @@ def edit(schedule_id):
         schedule=schedule
     )
 
+
+# =========================================
+# 削除
+# =========================================
 
 @app.route(
     "/delete/<int:schedule_id>",
@@ -494,6 +591,10 @@ def delete(schedule_id):
 
     return redirect("/")
 
+
+# =========================================
+# メールテスト
+# =========================================
 
 @app.route("/test-mail")
 @login_required

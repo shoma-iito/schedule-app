@@ -14,11 +14,20 @@
 
 <main>
     <form class="form-box" method="POST">
+
         <label>予定名</label>
         <input type="text" name="title" required>
 
-        <label>日時</label>
+        <label>開始日時</label>
         <input type="datetime-local" name="date" required>
+
+        <label>終了日時（任意）</label>
+        <input type="datetime-local" name="end_date">
+
+        <p class="help-text">
+            日をまたぐ予定の場合に入力してください。
+            例：8月15日 10:00 ～ 8月17日 18:00
+        </p>
 
         <h2 class="form-title">通知設定</h2>
 
@@ -42,6 +51,7 @@
         </label>
 
         <button type="submit">保存</button>
+
     </form>
 </main>
 

@@ -13,40 +13,82 @@
 </header>
 
 <main>
-    <form class="form-box" method="POST">
-        <label>予定名</label>
-        <input type="text" name="title" value="{{ schedule[1] }}" required>
 
-        <label>日時</label>
-        <input type="datetime-local" name="date" value="{{ schedule[2] }}" required>
+    <form class="form-box" method="POST">
+
+        <label>予定名</label>
+        <input
+            type="text"
+            name="title"
+            value="{{ schedule['title'] }}"
+            required
+        >
+
+        <label>開始日時</label>
+        <input
+            type="datetime-local"
+            name="date"
+            value="{{ schedule['date'] }}"
+            required
+        >
+
+        <label>終了日時（任意）</label>
+        <input
+            type="datetime-local"
+            name="end_date"
+            value="{{ schedule['end_date'] or '' }}"
+        >
+
+        <p class="help-text">
+            日をまたぐ予定の場合に入力してください。
+        </p>
 
         <h2 class="form-title">通知設定</h2>
 
         <label>前日通知の時刻</label>
-        <input type="time" name="notify_day_before" value="{{ schedule[3] or '' }}">
+        <input
+            type="time"
+            name="notify_day_before"
+            value="{{ schedule['notify_day_before'] or '' }}"
+        >
 
         <label>何分前に通知するか</label>
-        <input type="text" name="notify_minutes_before" value="{{ schedule[4] or '' }}" placeholder="例：120,60,30,10">
+        <input
+            type="text"
+            name="notify_minutes_before"
+            value="{{ schedule['notify_minutes_before'] or '' }}"
+            placeholder="例：120,60,30,10"
+        >
 
         <p class="help-text">
             複数指定する場合はカンマで区切る。例：120,60,30,10
         </p>
 
         <label class="checkbox-label">
-            {% if schedule[5] == 1 %}
-                <input type="checkbox" name="notify_at_time" checked>
-            {% else %}
-                <input type="checkbox" name="notify_at_time">
-            {% endif %}
+            <input
+                type="checkbox"
+                name="notify_at_time"
+                {% if schedule['notify_at_time'] == 1 %}
+                    checked
+                {% endif %}
+            >
             開始時刻にも通知する
         </label>
 
         <button type="submit">更新</button>
+
     </form>
 
-    <form class="delete-form" method="POST" action="/delete/{{ schedule[0] }}">
-        <button class="delete-button" type="submit">削除</button>
+    <form
+        class="delete-form"
+        method="POST"
+        action="/delete/{{ schedule['id'] }}"
+    >
+        <button class="delete-button" type="submit">
+            削除
+        </button>
     </form>
+
 </main>
 
 </body>

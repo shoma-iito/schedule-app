@@ -22,15 +22,23 @@ def init_db():
     cur = conn.cursor()
 
     if DATABASE_URL:
+        # schedules テーブル
         cur.execute("""
             CREATE TABLE IF NOT EXISTS schedules (
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 date TEXT NOT NULL,
+                end_date TEXT,
                 notify_day_before TEXT,
-                notify_minutes_before INTEGER,
+                notify_minutes_before TEXT,
                 notify_at_time INTEGER DEFAULT 0
             )
+        """)
+
+        # 既存テーブルに end_date が無い場合だけ追加
+        cur.execute("""
+            ALTER TABLE schedules
+            ADD COLUMN IF NOT EXISTS end_date TEXT
         """)
 
         cur.execute("""
@@ -43,17 +51,30 @@ def init_db():
                 FOREIGN KEY(schedule_id) REFERENCES schedules(id)
             )
         """)
+
     else:
+        # SQLite
         cur.execute("""
             CREATE TABLE IF NOT EXISTS schedules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 date TEXT NOT NULL,
+                end_date TEXT,
                 notify_day_before TEXT,
-                notify_minutes_before INTEGER,
+                notify_minutes_before TEXT,
                 notify_at_time INTEGER DEFAULT 0
             )
         """)
+
+        # SQLiteは ADD COLUMN IF NOT EXISTS が使えないので確認
+        cur.execute("PRAGMA table_info(schedules)")
+        columns = [row[1] for row in cur.fetchall()]
+
+        if "end_date" not in columns:
+            cur.execute("""
+                ALTER TABLE schedules
+                ADD COLUMN end_date TEXT
+            """)
 
         cur.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
@@ -67,4 +88,5 @@ def init_db():
         """)
 
     conn.commit()
+    cur.close()
     conn.close()
