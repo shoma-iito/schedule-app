@@ -46,7 +46,8 @@ def add_one_schedule(
     end_date,
     notify_day_before,
     notify_minutes_before,
-    notify_at_time
+    notify_at_time,
+    is_repeating=0
 ):
     conn = get_db()
     cur = conn.cursor()
@@ -60,9 +61,10 @@ def add_one_schedule(
             end_date,
             notify_day_before,
             notify_minutes_before,
-            notify_at_time
+            notify_at_time,
+            is_repeating
         )
-        VALUES (%s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
         (
@@ -71,7 +73,8 @@ def add_one_schedule(
             end_date,
             notify_day_before,
             notify_minutes_before,
-            notify_at_time
+            notify_at_time,
+            is_repeating
         )
     )
 
@@ -133,7 +136,8 @@ def create_repeating_schedules(
                 None,
                 notify_day_before,
                 notify_minutes_before,
-                notify_at_time
+                notify_at_time,
+                1
             )
 
             current += timedelta(days=1)
@@ -155,7 +159,8 @@ def create_repeating_schedules(
                 None,
                 notify_day_before,
                 notify_minutes_before,
-                notify_at_time
+                notify_at_time,
+                1
             )
 
             current += timedelta(days=7)
@@ -190,7 +195,8 @@ def create_repeating_schedules(
                         None,
                         notify_day_before,
                         notify_minutes_before,
-                        notify_at_time
+                        notify_at_time,
+                        1
                     )
 
             month += 1
@@ -273,6 +279,7 @@ def home():
     conn = get_db()
     cur = conn.cursor()
 
+    # カレンダー用：すべての予定を取得
     cur.execute(
         """
         SELECT *
@@ -280,8 +287,24 @@ def home():
         ORDER BY date
         """
     )
-
     schedules = cur.fetchall()
+
+    # 予定一覧用：
+    # ・繰り返し予定は表示しない
+    # ・今日より前に開始した予定は表示しない
+    today_str = today.strftime("%Y-%m-%dT00:00")
+
+    cur.execute(
+        """
+        SELECT *
+        FROM schedules
+        WHERE COALESCE(is_repeating, 0) = 0
+          AND date >= %s
+        ORDER BY date
+        """,
+        (today_str,)
+    )
+    list_schedules = cur.fetchall()
 
     cur.close()
     conn.close()
@@ -292,6 +315,7 @@ def home():
         month=month,
         month_days=month_days,
         schedules=schedules,
+        list_schedules=list_schedules,
         prev_year=prev_year,
         prev_month=prev_month,
         next_year=next_year,

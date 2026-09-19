@@ -14,7 +14,10 @@ def get_db():
             cursor_factory=psycopg2.extras.DictCursor
         )
 
-    return sqlite3.connect(DB_NAME)
+    # SQLiteでも列名でアクセスできるようにする
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def init_db():
@@ -22,7 +25,6 @@ def init_db():
     cur = conn.cursor()
 
     if DATABASE_URL:
-        # schedules テーブル
         cur.execute("""
             CREATE TABLE IF NOT EXISTS schedules (
                 id SERIAL PRIMARY KEY,
@@ -31,14 +33,19 @@ def init_db():
                 end_date TEXT,
                 notify_day_before TEXT,
                 notify_minutes_before TEXT,
-                notify_at_time INTEGER DEFAULT 0
+                notify_at_time INTEGER DEFAULT 0,
+                is_repeating INTEGER DEFAULT 0
             )
         """)
 
-        # 既存テーブルに end_date が無い場合だけ追加
         cur.execute("""
             ALTER TABLE schedules
             ADD COLUMN IF NOT EXISTS end_date TEXT
+        """)
+
+        cur.execute("""
+            ALTER TABLE schedules
+            ADD COLUMN IF NOT EXISTS is_repeating INTEGER DEFAULT 0
         """)
 
         cur.execute("""
@@ -53,7 +60,6 @@ def init_db():
         """)
 
     else:
-        # SQLite
         cur.execute("""
             CREATE TABLE IF NOT EXISTS schedules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,11 +68,11 @@ def init_db():
                 end_date TEXT,
                 notify_day_before TEXT,
                 notify_minutes_before TEXT,
-                notify_at_time INTEGER DEFAULT 0
+                notify_at_time INTEGER DEFAULT 0,
+                is_repeating INTEGER DEFAULT 0
             )
         """)
 
-        # SQLiteは ADD COLUMN IF NOT EXISTS が使えないので確認
         cur.execute("PRAGMA table_info(schedules)")
         columns = [row[1] for row in cur.fetchall()]
 
@@ -74,6 +80,12 @@ def init_db():
             cur.execute("""
                 ALTER TABLE schedules
                 ADD COLUMN end_date TEXT
+            """)
+
+        if "is_repeating" not in columns:
+            cur.execute("""
+                ALTER TABLE schedules
+                ADD COLUMN is_repeating INTEGER DEFAULT 0
             """)
 
         cur.execute("""

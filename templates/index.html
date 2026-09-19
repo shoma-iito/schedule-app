@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Schedule App</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
@@ -41,9 +41,7 @@
         </a>
     </div>
 
-
     <table class="calendar">
-
         <tr>
             <th class="sun">日</th>
             <th>月</th>
@@ -54,92 +52,37 @@
             <th class="sat">土</th>
         </tr>
 
-
         {% for week in month_days %}
-
         <tr>
-
             {% for day in week %}
-
             <td>
-
                 {% if day != 0 %}
 
-                    {% if
-                        year == today_year
-                        and month == today_month
-                        and day == today_day
-                    %}
-
-                        <div class="day today">
-                            {{ day }}
-                        </div>
-
-                    {% else %}
-
-                        <div class="day">
-                            {{ day }}
-                        </div>
-
-                    {% endif %}
-
-
-                    {% set current_date =
-                        "%04d-%02d-%02d"|format(
-                            year,
-                            month,
-                            day
-                        )
-                    %}
-
+                    <div class="day{% if year == today_year and month == today_month and day == today_day %} today{% endif %}">
+                        {{ day }}
+                    </div>
 
                     {% for schedule in schedules %}
 
-                        {% set start_date =
-                            schedule['date'][0:10]
-                        %}
+                        {% set schedule_date = schedule['date'][:10] %}
+                        {% set target_date = "%04d-%02d-%02d"|format(year, month, day) %}
 
-                        {% if schedule['end_date'] %}
-
-                            {% set finish_date =
-                                schedule['end_date'][0:10]
-                            %}
-
-                        {% else %}
-
-                            {% set finish_date =
-                                start_date
-                            %}
-
-                        {% endif %}
-
-
-                        {% if
-                            current_date >= start_date
-                            and current_date <= finish_date
-                        %}
-
+                        {% if schedule_date == target_date %}
                             <a
                                 class="event"
                                 href="/edit/{{ schedule['id'] }}"
                             >
                                 {{ schedule['title'] }}
                             </a>
-
                         {% endif %}
 
                     {% endfor %}
 
                 {% endif %}
-
             </td>
-
             {% endfor %}
-
         </tr>
-
         {% endfor %}
-
     </table>
 
 
@@ -149,22 +92,14 @@
 
         <ul>
 
-            {% for schedule in schedules %}
+            {% for schedule in list_schedules %}
 
                 <li>
 
-                    <span>
-                        {{ schedule['title'] }}
-                    </span>
+                    {{ schedule['date'][:10] }}
+                    {{ schedule['date'][11:16] }}
 
-                    <small>
-                        {{ schedule['date'] }}
-
-                        {% if schedule['end_date'] %}
-                            ～
-                            {{ schedule['end_date'] }}
-                        {% endif %}
-                    </small>
+                    {{ schedule['title'] }}
 
                     <a
                         class="edit-link"
@@ -174,6 +109,10 @@
                     </a>
 
                 </li>
+
+            {% else %}
+
+                <li>予定はありません。</li>
 
             {% endfor %}
 
